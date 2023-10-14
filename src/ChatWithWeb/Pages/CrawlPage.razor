@@ -1,0 +1,137 @@
+﻿@page "/crawl-page"
+@using System.Web;
+@using System.Text.RegularExpressions;
+@inject ISnackbar Snackbar
+@inject Crawler crawler
+
+<h3>Crawl a Web Content (Indexing)</h3>
+<MudGrid>
+    <MudItem xs="12" sm="7">
+        <MudPaper Class="pa-4">
+            <MudForm @ref="form" @bind-IsValid="@success" >
+                <MudTextField T="string" Label="Web Url" @bind-Value="WebUrl" Required="true" RequiredError="Web Url is required!" />
+            </MudForm>
+        </MudPaper>
+        <MudPaper Class="pa-4 mt-4">
+            <MudButton Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary" Disabled="crawler.IsProcessing" DisableElevation="true" OnClick="Crawl" Class="mx-1 mt-1">Crawl Web</MudButton>
+            <MudButton Variant="Variant.Filled" Size="Size.Small" Color="Color.Primary" Disabled="crawler.IsProcessing" DisableElevation="true" OnClick="DoIndexing" Class="mx-1 mt-1">Index Content</MudButton>
+            <MudButton Variant="Variant.Filled" Size="Size.Small" Color="Color.Success" Disabled="crawler.IsProcessing" DisableElevation="true" OnClick="ClearIndex" Class="mx-1 mt-1">Clear Indexed Content</MudButton>
+            <MudButton Variant="Variant.Filled" Size="Size.Small" Color="Color.Success" Disabled="crawler.IsProcessing" DisableElevation="true" OnClick="ClearContent" Class="mx-1 mt-1">Clear Crawled Content</MudButton>
+            <MudButton Variant="Variant.Filled" Size="Size.Small" Color="Color.Info" Disabled="crawler.IsProcessing" DisableElevation="true" OnClick="Clear" Class="mx-1 mt-1">Clear</MudButton>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="5">
+        <MudPaper Class="pa-4 mud-height-full">
+            <MudText Typo="Typo.subtitle2">@($"Information ({infos.Count})")</MudText>
+            @foreach (var info in infos)
+            {
+                <MudText Color="@Color.Info">@info</MudText>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+@if (crawler.IsProcessing)
+{
+    <MudProgressCircular Class="mt-2" Color="Color.Info" Indeterminate="true" />
+}
+@code {
+    public string WebUrl { get; set; } = "https://gravicode.com";
+    bool HasContent { set; get; } = false;
+    bool success;
+    List<string> infos = new();
+    List<IndexItem> ListIndex = new();
+    List<PageItem> ListPages = new();
+    MudTextField<string> pwField1;
+    MudForm form;
+    async Task Clear()
+    {
+        ListPages.Clear();
+        ListIndex.Clear();
+        infos.Clear();
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        crawler.ItemIndexed += async (a, b) =>
+        {
+
+            ListIndex.Add(b);
+            infos.Add($"new file: {b.FileName} has been indexed");
+            await InvokeAsync(StateHasChanged);
+        };    
+        crawler.ItemCrawled += async(a, b) =>
+        {
+            
+            ListPages.Add(b);
+            infos.Add($"new page: {b.URL} has been crawled");
+            await InvokeAsync(StateHasChanged);
+        };    
+    }
+    async Task ClearIndex()
+    {
+        if (crawler.IsProcessing) return;
+        var files = Directory.GetFiles(Crawler.VectorDir, "*.*");
+        var count = 0;
+        foreach (var file in files)
+        {
+            try
+            {
+                File.Delete(file);
+                count++;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                infos.Add($"cannot delete {file}");
+            }
+
+        }
+        if (count > 0)
+            Snackbar.Add($"{count} files has been deleted.", Severity.Success);
+    }
+    async Task ClearContent()
+    {
+        if (crawler.IsProcessing) return;
+        var files = Directory.GetFiles(Crawler.CrawledDir, "*.txt");
+        var count = 0;
+        foreach(var file in files)
+        {
+            try
+            {
+                File.Delete(file);
+                count++;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                infos.Add($"cannot delete {file}");
+            }
+
+        }
+        if(count>0)
+            Snackbar.Add($"{count} files has been deleted.", Severity.Success);
+    }
+    async Task DoIndexing()
+    {
+        var files = Directory.GetFiles(Crawler.CrawledDir, "*.txt");
+        if (!files.Any())
+        {
+            Snackbar.Add("Please crawl a web first.", Severity.Warning);
+            return;
+        }
+        ListIndex.Clear();
+
+        await crawler.DoIndexing();
+    }
+    async Task Crawl()
+    {
+        if (string.IsNullOrEmpty(WebUrl))
+        {
+            Snackbar.Add("Type url first.", Severity.Warning);
+            return;
+        }
+        ListPages.Clear();
+        await crawler.ProcessCrawl(WebUrl);
+    }
+   
+
+}

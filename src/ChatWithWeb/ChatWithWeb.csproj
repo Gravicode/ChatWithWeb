@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Abot" Version="2.0.70" />
+		<PackageReference Include="HtmlAgilityPack" Version="1.11.54" />
+
+		<PackageReference Include="Microsoft.SemanticKernel.Connectors.Memory.Sqlite" Version="1.0.0-beta1" />
+		<PackageReference Include="Microsoft.SemanticMemory.Core" Version="0.3.231009.6-preview" />
+		<PackageReference Include="PdfSharpTextExtractor" Version="1.0.2" />
+		<PackageReference Include="Microsoft.SemanticKernel" Version="1.0.0-beta1" />
+		<PackageReference Include="Microsoft.SemanticKernel.Skills.Web" Version="0.24.230912.2-preview" />
+		<PackageReference Include="MudBlazor" Version="6.0.13" />
+	</ItemGroup>
+
+</Project>
